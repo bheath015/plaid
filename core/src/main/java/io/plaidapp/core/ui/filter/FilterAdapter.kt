@@ -16,9 +16,11 @@
 
 package io.plaidapp.core.ui.filter
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import io.plaidapp.core.R
 import io.plaidapp.core.ui.filter.FilterHolderInfo.Companion.FILTER_DISABLED
 import io.plaidapp.core.ui.filter.FilterHolderInfo.Companion.FILTER_ENABLED
@@ -28,17 +30,10 @@ import io.plaidapp.core.ui.recyclerview.FilterSwipeDismissListener
 /**
  * Adapter for showing the list of data sources used as filters for the home grid.
  */
-class FilterAdapter : RecyclerView.Adapter<FilterViewHolder>(), FilterSwipeDismissListener {
-
-    private var filters: List<SourceUiModel> = emptyList()
+class FilterAdapter : ListAdapter<SourceUiModel, FilterViewHolder>(sourceUiModelDiff), FilterSwipeDismissListener {
 
     init {
         setHasStableIds(true)
-    }
-
-    fun submitList(sources: List<SourceUiModel>) {
-        this.filters = sources
-        notifyDataSetChanged()
     }
 
     fun highlightFilter(adapterPosition: Int) {
@@ -52,14 +47,14 @@ class FilterAdapter : RecyclerView.Adapter<FilterViewHolder>(), FilterSwipeDismi
         )
         holder.itemView.setOnClickListener {
             val position = holder.adapterPosition
-            val uiModel = filters[position]
+            val uiModel = getItem(position)
             uiModel.onSourceClicked(uiModel.source)
         }
         return holder
     }
 
     override fun onBindViewHolder(holder: FilterViewHolder, position: Int) {
-        val filter = filters[position]
+        val filter = getItem(position)
         holder.bind(filter.source)
     }
 
@@ -83,14 +78,31 @@ class FilterAdapter : RecyclerView.Adapter<FilterViewHolder>(), FilterSwipeDismi
         }
     }
 
-    override fun getItemCount() = filters.size
-
     override fun getItemId(position: Int): Long {
-        return filters[position].source.key.hashCode().toLong()
+        return getItem(position).source.key.hashCode().toLong()
     }
 
     override fun onItemDismiss(position: Int) {
-        val uiModel = filters[position]
+        val uiModel = getItem(position)
         uiModel.onSourceRemoved(uiModel.source)
     }
+
+    companion object {
+
+        private val sourceUiModelDiff = object : DiffUtil.ItemCallback<SourceUiModel>() {
+            override fun areItemsTheSame(oldItem: SourceUiModel, newItem: SourceUiModel): Boolean {
+                return oldItem.source.key == newItem.source.key
+            }
+
+            override fun areContentsTheSame(oldItem: SourceUiModel, newItem: SourceUiModel): Boolean {
+                Log.d("flo", "areContentsTheSame ${oldItem.source} vs ${newItem.source}")
+                return oldItem.source == newItem.source
+            }
+
+            override fun getChangePayload(oldItem: SourceUiModel, newItem: SourceUiModel): Any? {
+                return HIGHLIGHT
+            }
+        }
+    }
+
 }

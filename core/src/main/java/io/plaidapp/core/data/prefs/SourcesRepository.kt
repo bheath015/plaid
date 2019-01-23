@@ -73,17 +73,9 @@ class SourcesRepository(
         return cache
     }
 
-    private fun addSources(sources: List<Source>) {
-        val sourceKeys = sources.map { it.key }.toSet()
-        dataSource.addSources(sourceKeys, true)
+    fun addSources(sources: List<Source>) {
+        sources.forEach { dataSource.addSource(it.key, it.active) }
         cache.addAll(sources)
-        dispatchSourcesUpdated()
-    }
-
-    fun addSource(source: Source) {
-        dataSource.addSource(source.key, source.active)
-        cache.add(source)
-        dispatchSourceChanged(source)
         dispatchSourcesUpdated()
     }
 

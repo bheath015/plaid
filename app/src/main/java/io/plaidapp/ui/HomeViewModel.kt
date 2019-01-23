@@ -16,6 +16,7 @@
 
 package io.plaidapp.ui
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -55,7 +56,7 @@ class HomeViewModel(
         }
 
         override fun onFiltersUpdated(sources: List<Source>) {
-            super.onFiltersUpdated(sources)
+            Log.d("flo", "filters updated $sources")
             updateSources(sources)
         }
     }
@@ -80,28 +81,33 @@ class HomeViewModel(
         super.onCleared()
     }
 
-    /**
-     * Adds the source and returns true if it's a new source
-     */
-    fun addSource(toAdd: Source): Boolean {
-        val filters = sources.value ?: return false
+    fun addSources(query: String, isDribbble: Boolean, isDesignerNews: Boolean){
+        val filters = sources.value ?: return
 
-        // first check if it already exists
-        for (i in 0 until filters.size) {
-            val existing = filters[i]
-            if (existing.source.javaClass == toAdd.javaClass &&
-                    existing.source.key.equals(toAdd.key, ignoreCase = true)
-            ) {
-                // already exists, just ensure it's active
-                if (!existing.source.active) {
-                    sourcesRepository.changeSourceActiveState(existing.source)
+        val sources = mutableListOf<Source>()
+        if(isDribbble){
+            sources.add(Source.DribbbleSearchSource(query, true))
+        }
+        if(isDesignerNews){
+            sources.add(Source.DesignerNewsSearchSource(query, true))
+        }
+        sources.forEach { toAdd ->
+            // first check if it already exists
+            for (i in 0 until filters.size) {
+                val existing = filters[i]
+                if (existing.source.javaClass == toAdd.javaClass &&
+                        existing.source.key.equals(toAdd.key, ignoreCase = true)
+                ) {
+                    // already exists, just ensure it's active
+                    if (!existing.source.active) {
+                        sourcesRepository.changeSourceActiveState(existing.source)
+                    }
+                    sources.remove(toAdd)
                 }
-                return false
             }
         }
         // didn't already exist, so add it
-        sourcesRepository.addSource(toAdd)
-        return true
+        sourcesRepository.addSources(sources)
     }
 
     private fun getSources() {
